@@ -1,0 +1,4 @@
+app_port: 5000
+app_env: dev
+app_entry: app.py
+app_dir: "{{ lookup('env', 'HOME') }}/devops-hub"

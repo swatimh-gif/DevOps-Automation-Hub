@@ -1,0 +1,5 @@
+---
+- name: Configure Python runtime and deploy DevOps Automation Hub
+  hosts: app
+  roles:
+    - app

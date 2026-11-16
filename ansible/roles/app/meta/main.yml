@@ -1,0 +1,10 @@
+---
+galaxy_info:
+  author: swatimh-gif
+  description: Sets up the Python runtime and runs the DevOps Automation Hub app
+  license: MIT
+  min_ansible_version: "2.12"
+  platforms:
+    - name: Ubuntu
+      versions: [all]
+dependencies: []
