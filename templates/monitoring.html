@@ -1,0 +1,172 @@
+{% extends "base.html" %}
+
+{% block title %}Application Monitoring{% endblock %}
+{% block page_icon %}<i class="bi bi-heart-pulse-fill text-primary"></i>{% endblock %}
+{% block page_title %}Application Monitoring & Health Probes{% endblock %}
+
+{% block content %}
+<!-- Live System Health Header -->
+<div class="row g-3 mb-4">
+    <div class="col-12">
+        <div class="hub-card bg-white p-4">
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="metric-icon-box icon-green">
+                        <i class="bi bi-heart-pulse-fill fs-3 text-success"></i>
+                    </div>
+                    <div>
+                        <div class="d-flex align-items-center gap-2">
+                            <h4 class="fw-bold mb-0">Endpoint Health Probe: /health</h4>
+                            <span class="badge-status badge-success">
+                                <span class="pulse-dot pulse-green"></span> Operational
+                            </span>
+                        </div>
+                        <p class="text-muted small mb-0 mt-1">
+                            Live system metrics and uptime polling every 4 seconds. Returns authentic JSON metadata from running Flask application.
+                        </p>
+                    </div>
+                </div>
+                <div>
+                    <button id="manualProbeBtn" class="btn btn-hub-primary btn-sm">
+                        <i class="bi bi-arrow-clockwise"></i> Send Health Probe Ping
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- System Resource Metrics Row -->
+<div class="row g-3 mb-4">
+    <!-- CPU Utilization -->
+    <div class="col-12 col-md-4">
+        <div class="hub-card p-4">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="text-muted small fw-bold text-uppercase">CPU Utilization</span>
+                <span id="monCpuVal" class="fw-bold fs-5 text-primary">{{ metrics.cpu_percent }}%</span>
+            </div>
+            <div class="progress mb-2" style="height: 10px;">
+                <div id="monCpuBar" class="progress-bar bg-primary" role="progressbar" style="width: {{ metrics.cpu_percent }}%"></div>
+            </div>
+            <div class="d-flex justify-content-between small text-muted">
+                <span>Logical Cores: {{ metrics.cpu_count }}</span>
+                <span>Host: {{ metrics.hostname }}</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- RAM Memory Utilization -->
+    <div class="col-12 col-md-4">
+        <div class="hub-card p-4">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="text-muted small fw-bold text-uppercase">RAM Memory</span>
+                <span id="monMemVal" class="fw-bold fs-5 text-purple">{{ metrics.memory_percent }}%</span>
+            </div>
+            <div class="progress mb-2" style="height: 10px;">
+                <div id="monMemBar" class="progress-bar bg-purple" role="progressbar" style="width: {{ metrics.memory_percent }}%"></div>
+            </div>
+            <div class="d-flex justify-content-between small text-muted">
+                <span id="monMemDetail">{{ metrics.memory_used_gb }} GB / {{ metrics.memory_total_gb }} GB</span>
+                <span>System Total</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Disk Storage -->
+    <div class="col-12 col-md-4">
+        <div class="hub-card p-4">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="text-muted small fw-bold text-uppercase">Disk Storage</span>
+                <span id="monDiskVal" class="fw-bold fs-5 text-success">{{ metrics.disk_percent }}%</span>
+            </div>
+            <div class="progress mb-2" style="height: 10px;">
+                <div id="monDiskBar" class="progress-bar bg-success" role="progressbar" style="width: {{ metrics.disk_percent }}%"></div>
+            </div>
+            <div class="d-flex justify-content-between small text-muted">
+                <span id="monDiskDetail">{{ metrics.disk_used_gb }} GB / {{ metrics.disk_total_gb }} GB</span>
+                <span>Root Drive</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Process Info & Raw Probe JSON Row -->
+<div class="row g-3">
+    <!-- Application Process Health -->
+    <div class="col-12 col-lg-5">
+        <div class="hub-card h-100">
+            <div class="hub-card-header">
+                <h5 class="hub-card-title">
+                    <i class="bi bi-cpu text-primary"></i> Process Telemetry & Uptime
+                </h5>
+                <span class="badge-status badge-success">PID {{ metrics.process_pid }}</span>
+            </div>
+            <div class="hub-card-body">
+                <div class="list-group list-group-flush small">
+                    <div class="list-group-item d-flex justify-content-between px-0">
+                        <span class="text-muted">Service Name:</span>
+                        <span class="fw-bold">{{ metrics.service }}</span>
+                    </div>
+                    <div class="list-group-item d-flex justify-content-between px-0">
+                        <span class="text-muted">Application Version:</span>
+                        <span class="badge bg-light text-dark border">v{{ metrics.version }}</span>
+                    </div>
+                    <div class="list-group-item d-flex justify-content-between px-0">
+                        <span class="text-muted">Application Uptime:</span>
+                        <span id="monUptime" class="fw-bold text-success">{{ metrics.uptime_formatted }}</span>
+                    </div>
+                    <div class="list-group-item d-flex justify-content-between px-0">
+                        <span class="text-muted">Process Resident RAM (RSS):</span>
+                        <span id="monProcMem" class="font-monospace fw-bold">{{ metrics.process_memory_mb }} MB</span>
+                    </div>
+                    <div class="list-group-item d-flex justify-content-between px-0">
+                        <span class="text-muted">Operating System:</span>
+                        <span>{{ metrics.os_name }} {{ metrics.os_release }}</span>
+                    </div>
+                    <div class="list-group-item d-flex justify-content-between px-0">
+                        <span class="text-muted">Python Runtime:</span>
+                        <span class="font-monospace">v{{ metrics.python_version }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Live Health Probe Inspector (JSON) -->
+    <div class="col-12 col-lg-7">
+        <div class="hub-card h-100">
+            <div class="hub-card-header">
+                <div class="d-flex align-items-center gap-2">
+                    <h5 class="hub-card-title">
+                        <i class="bi bi-filetype-json text-purple"></i> Live GET /health Response Inspector
+                    </h5>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <span id="probeLatencyBadge" class="badge-status badge-info">1.2 ms</span>
+                    <span id="probeStatusBadge" class="badge-status badge-success">HTTP 200 OK</span>
+                </div>
+            </div>
+            <div class="hub-card-body p-0">
+                <pre id="probeJsonViewer" class="bg-dark text-success p-3 m-0 font-monospace small" style="border-radius: 0 0 12px 12px; height: 260px; overflow-y: auto;"><code>{
+  "status": "healthy",
+  "service": "DevOps-Automation-Hub",
+  "version": "1.0.0",
+  "timestamp": "{{ metrics.timestamp }}",
+  "uptime_seconds": {{ metrics.uptime_seconds }},
+  "uptime_human": "{{ metrics.uptime_formatted }}",
+  "database": "connected",
+  "system": {
+    "cpu_percent": {{ metrics.cpu_percent }},
+    "memory_percent": {{ metrics.memory_percent }},
+    "disk_percent": {{ metrics.disk_percent }}
+  }
+}</code></pre>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/monitoring.js') }}"></script>
+{% endblock %}

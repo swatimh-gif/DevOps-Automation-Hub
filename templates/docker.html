@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+
+{% block title %}Docker Containerization Status{% endblock %}
+{% block page_icon %}<i class="bi bi-box-seam text-primary"></i>{% endblock %}
+{% block page_title %}Docker Containerization & Engine Status{% endblock %}
+
+{% block content %}
+<!-- Docker Engine Status Banner -->
+<div class="row g-3 mb-4">
+    <div class="col-12">
+        {% if docker.available %}
+            <div class="alert alert-success d-flex align-items-center gap-3 p-3">
+                <i class="bi bi-check-circle-fill fs-3 text-success"></i>
+                <div>
+                    <h5 class="fw-bold mb-1">Docker Engine is Active and Operational</h5>
+                    <p class="mb-0 small text-success-emphasis">
+                        {{ docker.version }} detected. The CI/CD pipeline will automatically build container images upon successful test completion.
+                    </p>
+                </div>
+            </div>
+        {% else %}
+            <div class="alert alert-warning d-flex align-items-center gap-3 p-3">
+                <i class="bi bi-exclamation-triangle-fill fs-3 text-warning"></i>
+                <div>
+                    <h5 class="fw-bold mb-1">Docker CLI / Daemon Not Active on Host System</h5>
+                    <p class="mb-0 small text-warning-emphasis">
+                        <strong>Status: SKIPPED (Non-Fatal).</strong> {{ docker.reason }}
+                        In accordance with honest DevOps principles, this environment safely marks the Docker stage as <strong>SKIPPED</strong> rather than fabricating artificial success.
+                    </p>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Diagnostics & Commands Row -->
+<div class="row g-3 mb-4">
+    <div class="col-12 col-lg-5">
+        <div class="hub-card h-100">
+            <div class="hub-card-header">
+                <h5 class="hub-card-title">
+                    <i class="bi bi-info-circle text-primary"></i> Host Docker Diagnostics
+                </h5>
+                <span class="badge-status {% if docker.available %}badge-success{% else %}badge-warning{% endif %}">
+                    {% if docker.available %}Connected{% else %}Not Available{% endif %}
+                </span>
+            </div>
+            <div class="hub-card-body">
+                <div class="list-group list-group-flush small">
+                    <div class="list-group-item d-flex justify-content-between px-0">
+                        <span class="text-muted">Docker Executable:</span>
+                        <span class="font-monospace fw-bold">{{ docker.binary_path }}</span>
+                    </div>
+                    <div class="list-group-item d-flex justify-content-between px-0">
+                        <span class="text-muted">Engine Version:</span>
+                        <span>{{ docker.version }}</span>
+                    </div>
+                    <div class="list-group-item d-flex justify-content-between px-0">
+                        <span class="text-muted">Daemon Reachable:</span>
+                        <span>
+                            {% if docker.available %}
+                                <span class="text-success fw-bold"><i class="bi bi-check-circle-fill"></i> Yes</span>
+                            {% else %}
+                                <span class="text-warning fw-bold"><i class="bi bi-dash-circle-fill"></i> No (Skipped)</span>
+                            {% endif %}
+                        </span>
+                    </div>
+                    <div class="list-group-item d-flex justify-content-between px-0">
+                        <span class="text-muted">Target Image:</span>
+                        <span class="font-monospace text-primary">devops-automation-hub:latest</span>
+                    </div>
+                    <div class="list-group-item d-flex justify-content-between px-0">
+                        <span class="text-muted">Target Port:</span>
+                        <span class="font-monospace">5000:5000</span>
+                    </div>
+                </div>
+
+                <div class="mt-4 p-3 bg-light rounded border">
+                    <h6 class="fw-bold small text-uppercase text-muted mb-2">Terminal Commands to Run in Docker:</h6>
+                    <pre class="bg-dark text-white p-2 rounded small m-0 font-monospace"><code># Build Docker image
+docker build -t devops-automation-hub:latest .
+
+# Run container with port forwarding
+docker run -d -p 5000:5000 --name devops_hub devops-automation-hub:latest
+
+# Or launch via Docker Compose
+docker compose up -d</code></pre>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dockerfile Inspection Card -->
+    <div class="col-12 col-lg-7">
+        <div class="hub-card h-100">
+            <div class="hub-card-header">
+                <h5 class="hub-card-title">
+                    <i class="bi bi-file-earmark-code text-primary"></i> Dockerfile Configuration
+                </h5>
+                <span class="badge-status badge-info">Production Spec</span>
+            </div>
+            <div class="hub-card-body p-0">
+                <pre class="bg-dark text-white p-3 m-0 font-monospace small" style="border-radius: 0 0 12px 12px; height: 350px; overflow-y: auto;"><code># 1. Appropriate lightweight Python base image
+FROM python:3.11-slim
+
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    FLASK_APP=app.py \
+    PORT=5000
+
+# Set work directory
+WORKDIR /app
+
+# Install system dependencies (curl for healthcheck)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl git && rm -rf /var/lib/apt/lists/*
+
+# 2. Install project dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# 3. Copy application files
+COPY . .
+
+# 4. Configure application port
+EXPOSE 5000
+
+# Container healthcheck probe
+HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:5000/health || exit 1
+
+# 5. Start the Flask application
+CMD ["python", "app.py"]</code></pre>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Docker Compose Specification -->
+<div class="row g-3">
+    <div class="col-12">
+        <div class="hub-card">
+            <div class="hub-card-header">
+                <h5 class="hub-card-title">
+                    <i class="bi bi-stack text-purple"></i> Multi-Container Orchestration (docker-compose.yml)
+                </h5>
+                <span class="badge-status badge-neutral">v3.8 Spec</span>
+            </div>
+            <div class="hub-card-body p-0">
+                <pre class="bg-dark text-white p-3 m-0 font-monospace small" style="border-radius: 0 0 12px 12px;"><code>version: '3.8'
+
+services:
+  devops-hub:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: devops-automation-hub:latest
+    container_name: devops_hub_app
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_ENV=production
+      - PORT=5000
+      - DEPLOYMENT_TARGET=Docker-Local
+    volumes:
+      - devops_data:/app/instance
+      - devops_logs:/app/logs
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  devops_data:
+  devops_logs:</code></pre>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

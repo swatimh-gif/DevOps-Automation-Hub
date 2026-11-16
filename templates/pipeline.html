@@ -1,0 +1,206 @@
+{% extends "base.html" %}
+
+{% block title %}Pipeline Execution{% endblock %}
+{% block page_icon %}<i class="bi bi-play-circle-fill text-primary"></i>{% endblock %}
+{% block page_title %}CI/CD Pipeline Execution{% endblock %}
+
+{% block content %}
+<!-- Execution Header Banner -->
+<div class="row g-3 mb-4">
+    <div class="col-12">
+        <div class="hub-card bg-white p-4">
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+                <div>
+                    <h3 class="fw-bold mb-1">Execute Automated CI/CD Pipeline</h3>
+                    <p class="text-muted mb-0">
+                        Trigger end-to-end automation: source verification, dependency checking, pytest execution, Docker image packaging, staged deployment and application health check.
+                    </p>
+                </div>
+                <div class="d-flex flex-wrap gap-2">
+                    <button id="runPipelineBtn" class="btn btn-hub-primary" onclick="triggerPipeline(false)">
+                        <i class="bi bi-play-fill fs-5"></i> Run Pipeline (Standard)
+                    </button>
+                    <button id="simulateFailBtn" class="btn btn-hub-danger" onclick="triggerPipeline(true)" title="Demonstrates pipeline failure handling">
+                        <i class="bi bi-bug-fill"></i> Run Pipeline (Simulate Failure)
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Alert Banner (Initially Hidden) -->
+<div id="pipelineStatusBanner" class="alert d-none" role="alert"></div>
+
+<!-- Pipeline Execution Visual Stepper -->
+<div class="row g-3 mb-4">
+    <div class="col-12">
+        <div class="hub-card p-4">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+                <h5 class="fw-bold m-0"><i class="bi bi-diagram-3-fill text-primary me-2"></i>Automated Workflow Stages</h5>
+                <span class="badge-status badge-info">Real-time Progression</span>
+            </div>
+
+            <div class="pipeline-stepper">
+                <div class="step-connector">
+                    <div id="connectorFill" class="step-connector-fill"></div>
+                </div>
+
+                <!-- Stage 1: Source -->
+                <div class="pipeline-step" id="step-source">
+                    <div class="step-node"><i class="bi bi-git"></i></div>
+                    <div class="step-label">1. Source Check</div>
+                    <div class="step-status-sub">Ready</div>
+                </div>
+
+                <!-- Stage 2: Dependencies -->
+                <div class="pipeline-step" id="step-dep">
+                    <div class="step-node"><i class="bi bi-box"></i></div>
+                    <div class="step-label">2. Dependencies</div>
+                    <div class="step-status-sub">Ready</div>
+                </div>
+
+                <!-- Stage 3: Testing -->
+                <div class="pipeline-step" id="step-test">
+                    <div class="step-node"><i class="bi bi-check2-all"></i></div>
+                    <div class="step-label">3. Automated Tests</div>
+                    <div class="step-status-sub">Ready</div>
+                </div>
+
+                <!-- Stage 4: Docker -->
+                <div class="pipeline-step" id="step-docker">
+                    <div class="step-node"><i class="bi bi-box-seam"></i></div>
+                    <div class="step-label">4. Docker Build</div>
+                    <div class="step-status-sub">Ready</div>
+                </div>
+
+                <!-- Stage 5: Deployment -->
+                <div class="pipeline-step" id="step-deploy">
+                    <div class="step-node"><i class="bi bi-cloud-arrow-up"></i></div>
+                    <div class="step-label">5. Deployment</div>
+                    <div class="step-status-sub">Ready</div>
+                </div>
+
+                <!-- Stage 6: Health -->
+                <div class="pipeline-step" id="step-health">
+                    <div class="step-node"><i class="bi bi-heart-pulse"></i></div>
+                    <div class="step-label">6. Health Probe</div>
+                    <div class="step-status-sub">Ready</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Execution Console & Latest Run Breakdown -->
+<div class="row g-3 mb-4">
+    <!-- Live Console Output -->
+    <div class="col-12 col-lg-7">
+        <div class="hub-card h-100">
+            <div class="hub-card-header bg-dark text-white border-0">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="terminal-dots">
+                        <span class="terminal-dot dot-red"></span>
+                        <span class="terminal-dot dot-yellow"></span>
+                        <span class="terminal-dot dot-green"></span>
+                    </div>
+                    <span class="font-monospace small fw-semibold text-secondary">devops-pipeline-runner // stdout & stderr</span>
+                </div>
+                <button class="btn btn-sm btn-outline-secondary text-white py-0 px-2" onclick="document.getElementById('pipelineTerminal').innerHTML = ''">
+                    <i class="bi bi-trash"></i> Clear
+                </button>
+            </div>
+            <div class="terminal-console" id="pipelineTerminal" style="border-radius: 0 0 12px 12px; height: 350px;">
+                <p class="log-line log-info">[INFO] DevOps Automation Hub Pipeline Console ready.</p>
+                <p class="log-line log-info">[INFO] Click 'Run Pipeline' to execute genuine backend tests, Docker checks, and health verification.</p>
+                <p class="log-line log-warning">[TIP] Use 'Run Pipeline (Simulate Failure)' to demonstrate how CI/CD halts safely when a test fails.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Latest Run Details Card -->
+    <div class="col-12 col-lg-5">
+        <div class="hub-card h-100">
+            <div class="hub-card-header">
+                <h5 class="hub-card-title">
+                    <i class="bi bi-info-circle-fill text-purple"></i> Latest Execution Details
+                </h5>
+                {% if latest_run %}
+                    <span class="badge-status {% if latest_run.overall_status == 'SUCCESS' %}badge-success{% else %}badge-danger{% endif %}">
+                        {{ latest_run.overall_status }}
+                    </span>
+                {% endif %}
+            </div>
+            <div class="hub-card-body">
+                {% if latest_run %}
+                    <div class="list-group list-group-flush small">
+                        <div class="list-group-item d-flex justify-content-between px-0">
+                            <span class="text-muted">Run Identifier:</span>
+                            <span class="fw-bold font-monospace">#{{ latest_run.run_id }}</span>
+                        </div>
+                        <div class="list-group-item d-flex justify-content-between px-0">
+                            <span class="text-muted">Trigger Type:</span>
+                            <span>{{ latest_run.trigger_type }}</span>
+                        </div>
+                        <div class="list-group-item d-flex justify-content-between px-0">
+                            <span class="text-muted">Commit Revision:</span>
+                            <span class="font-monospace">{{ latest_run.commit_hash }} ({{ latest_run.branch }})</span>
+                        </div>
+                        <div class="list-group-item d-flex justify-content-between px-0">
+                            <span class="text-muted">Automated Tests:</span>
+                            <span>
+                                {% if latest_run.test_status == 'PASSED' %}
+                                    <span class="text-success fw-bold"><i class="bi bi-check-circle-fill"></i> {{ latest_run.tests_passed }}/{{ latest_run.tests_total }} Passed</span>
+                                {% else %}
+                                    <span class="text-danger fw-bold"><i class="bi bi-x-circle-fill"></i> {{ latest_run.tests_failed }} Failed</span>
+                                {% endif %}
+                            </span>
+                        </div>
+                        <div class="list-group-item d-flex justify-content-between px-0">
+                            <span class="text-muted">Docker Container:</span>
+                            <span>
+                                {% if latest_run.docker_status == 'PASSED' %}
+                                    <span class="text-success fw-bold">Built (devops-automation-hub)</span>
+                                {% elif latest_run.docker_status == 'SKIPPED' %}
+                                    <span class="text-warning fw-bold">Skipped (No Daemon)</span>
+                                {% else %}
+                                    <span class="text-danger fw-bold">Failed</span>
+                                {% endif %}
+                            </span>
+                        </div>
+                        <div class="list-group-item d-flex justify-content-between px-0">
+                            <span class="text-muted">Deployment:</span>
+                            <span>
+                                {% if latest_run.deployment_status == 'PASSED' %}
+                                    <span class="text-success fw-bold">Deployed to Staging</span>
+                                {% elif latest_run.deployment_status == 'PENDING' %}
+                                    <span class="text-warning fw-bold">Pending / Config</span>
+                                {% else %}
+                                    <span class="text-secondary fw-bold">{{ latest_run.deployment_status }}</span>
+                                {% endif %}
+                            </span>
+                        </div>
+                        <div class="list-group-item d-flex justify-content-between px-0">
+                            <span class="text-muted">Execution Duration:</span>
+                            <span class="fw-bold">{{ latest_run.duration }} seconds</span>
+                        </div>
+                        <div class="list-group-item d-flex justify-content-between px-0">
+                            <span class="text-muted">Execution Timestamp:</span>
+                            <span>{{ latest_run.start_time[:19] }}</span>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4 text-muted">
+                        <i class="bi bi-play-circle fs-2 d-block mb-2"></i>
+                        No pipeline runs executed yet. Click above to trigger the pipeline!
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/pipeline.js') }}"></script>
+{% endblock %}

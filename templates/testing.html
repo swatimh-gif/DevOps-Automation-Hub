@@ -1,0 +1,228 @@
+{% extends "base.html" %}
+
+{% block title %}Automated Testing Results{% endblock %}
+{% block page_icon %}<i class="bi bi-shield-check text-primary"></i>{% endblock %}
+{% block page_title %}Automated Testing (Pytest Suite){% endblock %}
+
+{% block content %}
+<!-- Metric Cards Row -->
+<div class="row g-3 mb-4">
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="hub-card metric-card">
+            <div>
+                <div class="metric-label">Total Test Assertions</div>
+                <div class="metric-value">{{ metrics.total_tests_passed + metrics.total_tests_failed }}</div>
+                <div class="metric-subtext text-primary">Recorded in database</div>
+            </div>
+            <div class="metric-icon-box icon-blue">
+                <i class="bi bi-check2-all"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="hub-card metric-card green">
+            <div>
+                <div class="metric-label">Passed Tests</div>
+                <div class="metric-value text-success">{{ metrics.total_tests_passed }}</div>
+                <div class="metric-subtext text-success">Verified functionality</div>
+            </div>
+            <div class="metric-icon-box icon-green">
+                <i class="bi bi-shield-check"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="hub-card metric-card danger">
+            <div>
+                <div class="metric-label">Failed Tests</div>
+                <div class="metric-value text-danger">{{ metrics.total_tests_failed }}</div>
+                <div class="metric-subtext text-danger">Failure-containment caught</div>
+            </div>
+            <div class="metric-icon-box icon-red">
+                <i class="bi bi-shield-x"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="hub-card metric-card purple">
+            <div>
+                <div class="metric-label">Pytest Framework</div>
+                <div class="metric-value fs-4">v8.x / v9.x</div>
+                <div class="metric-subtext text-muted">Python 3.11+ / 3.13+</div>
+            </div>
+            <div class="metric-icon-box icon-purple">
+                <i class="bi bi-cpu"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Test Suite Architecture Overview -->
+<div class="row g-3 mb-4">
+    <div class="col-12 col-lg-8">
+        <div class="hub-card">
+            <div class="hub-card-header">
+                <h5 class="hub-card-title">
+                    <i class="bi bi-code-square text-primary"></i> Integrated Pytest Test Suite Definition
+                </h5>
+                <span class="badge-status badge-info">7 Automated Cases</span>
+            </div>
+            <div class="hub-card-body p-0">
+                <div class="table-responsive">
+                    <table class="hub-table">
+                        <thead>
+                            <tr>
+                                <th>Test Identifier</th>
+                                <th>Category</th>
+                                <th>Objective / Assertion Scope</th>
+                                <th>File Location</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="font-monospace fw-bold small text-primary">test_homepage_availability</td>
+                                <td><span class="badge bg-primary-subtle text-primary border border-primary-subtle">HTTP Smoke</span></td>
+                                <td>Validates HTTP 200 response and HTML rendering for root endpoint (`/`).</td>
+                                <td class="small text-muted font-monospace">tests/test_app.py</td>
+                            </tr>
+                            <tr>
+                                <td class="font-monospace fw-bold small text-primary">test_health_endpoint</td>
+                                <td><span class="badge bg-success-subtle text-success border border-success-subtle">Health Check</span></td>
+                                <td>Validates JSON payload `{status: "healthy", service: ...}` from `/health`.</td>
+                                <td class="small text-muted font-monospace">tests/test_app.py</td>
+                            </tr>
+                            <tr>
+                                <td class="font-monospace fw-bold small text-primary">test_backend_api_metrics</td>
+                                <td><span class="badge bg-info-subtle text-info border border-info-subtle">API Contract</span></td>
+                                <td>Validates structure and calculations of `/api/metrics` endpoint.</td>
+                                <td class="small text-muted font-monospace">tests/test_app.py</td>
+                            </tr>
+                            <tr>
+                                <td class="font-monospace fw-bold small text-primary">test_backend_api_status</td>
+                                <td><span class="badge bg-info-subtle text-info border border-info-subtle">API Contract</span></td>
+                                <td>Validates operational health response from `/api/status`.</td>
+                                <td class="small text-muted font-monospace">tests/test_app.py</td>
+                            </tr>
+                            <tr>
+                                <td class="font-monospace fw-bold small text-primary">test_database_connectivity</td>
+                                <td><span class="badge bg-warning-subtle text-warning border border-warning-subtle">Database</span></td>
+                                <td>Verifies SQLite database tables (`pipeline_runs`, `test_results`, `system_logs`).</td>
+                                <td class="small text-muted font-monospace">tests/test_functionality.py</td>
+                            </tr>
+                            <tr>
+                                <td class="font-monospace fw-bold small text-primary">test_calculation_utility</td>
+                                <td><span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">Unit Logic</span></td>
+                                <td>Verifies percentage calculations and arithmetic reliability.</td>
+                                <td class="small text-muted font-monospace">tests/test_functionality.py</td>
+                            </tr>
+                            <tr>
+                                <td class="font-monospace fw-bold small text-primary">test_pipeline_failure_simulation</td>
+                                <td><span class="badge bg-danger-subtle text-danger border border-danger-subtle">Demo Failure</span></td>
+                                <td>Controlled assertion hook used to demonstrate CI/CD failure-containment.</td>
+                                <td class="small text-muted font-monospace">tests/test_functionality.py</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Demonstration Box: Testing Philosophy -->
+    <div class="col-12 col-lg-4">
+        <div class="hub-card h-100">
+            <div class="hub-card-header">
+                <h5 class="hub-card-title">
+                    <i class="bi bi-shield-exclamation text-warning"></i> CI/CD Quality Gate
+                </h5>
+            </div>
+            <div class="hub-card-body">
+                <p class="small text-muted">
+                    In modern DevOps engineering, automated testing functions as the primary <strong>Quality Gate</strong>:
+                </p>
+                <div class="p-3 bg-light rounded border mb-3">
+                    <div class="d-flex align-items-center gap-2 mb-2 text-success fw-bold small">
+                        <i class="bi bi-check-circle-fill"></i> Tests Pass
+                    </div>
+                    <div class="small text-secondary">
+                        Pipeline proceeds to containerization (Docker) and staging deployment.
+                    </div>
+                </div>
+                <div class="p-3 bg-danger-subtle rounded border border-danger-subtle mb-3">
+                    <div class="d-flex align-items-center gap-2 mb-2 text-danger fw-bold small">
+                        <i class="bi bi-x-circle-fill"></i> Any Test Fails
+                    </div>
+                    <div class="small text-danger">
+                        Pipeline halts immediately. Container build & deployment stages are <strong>SKIPPED</strong> to protect production.
+                    </div>
+                </div>
+                <div class="d-grid gap-2">
+                    <a href="/pipeline" class="btn btn-hub-primary btn-sm">
+                        <i class="bi bi-play-circle-fill"></i> Run Test Suite via Pipeline
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Test Results Table -->
+<div class="row g-3">
+    <div class="col-12">
+        <div class="hub-card">
+            <div class="hub-card-header">
+                <h5 class="hub-card-title">
+                    <i class="bi bi-list-check text-primary"></i> Recent Test Executions Log
+                </h5>
+                <span class="text-muted small">Persisted in SQLite database (`test_results` table)</span>
+            </div>
+            <div class="hub-card-body p-0">
+                <div class="table-responsive">
+                    <table class="hub-table">
+                        <thead>
+                            <tr>
+                                <th>Run ID</th>
+                                <th>Test Name</th>
+                                <th>Status</th>
+                                <th>Duration</th>
+                                <th>Error / Traceback</th>
+                                <th>Executed At</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if tests %}
+                                {% for t in tests %}
+                                <tr>
+                                    <td>
+                                        <a href="/history" class="font-monospace fw-bold text-decoration-none">#{{ t.run_id }}</a>
+                                    </td>
+                                    <td class="font-monospace small">{{ t.test_name }}</td>
+                                    <td>
+                                        {% if t.status == 'PASSED' %}
+                                            <span class="badge-status badge-success"><i class="bi bi-check"></i> PASSED</span>
+                                        {% else %}
+                                            <span class="badge-status badge-danger"><i class="bi bi-x"></i> FAILED</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ t.duration }}s</td>
+                                    <td class="small text-danger">
+                                        {{ t.error_message or '<span class="text-muted">None (clean exit)</span>'|safe }}
+                                    </td>
+                                    <td class="small text-muted">{{ t.created_at }}</td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="6" class="text-center py-4 text-muted">
+                                        No individual test results recorded yet. Run the pipeline to see pytest executions here.
+                                    </td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

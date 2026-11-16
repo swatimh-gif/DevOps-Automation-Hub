@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+
+{% block title %}Execution Logs{% endblock %}
+{% block page_icon %}<i class="bi bi-journal-code text-primary"></i>{% endblock %}
+{% block page_title %}Execution Logs & Audit Stream{% endblock %}
+
+{% block content %}
+<div class="row g-3 mb-4">
+    <div class="col-12">
+        <div class="hub-card">
+            <div class="hub-card-header flex-wrap gap-2">
+                <div>
+                    <h5 class="hub-card-title">
+                        <i class="bi bi-terminal text-primary"></i> System & Pipeline Event Logs
+                    </h5>
+                    <span class="text-muted small">Persisted in SQLite database (`system_logs`) and physical disk (`logs/pipeline.log`)</span>
+                </div>
+                <div class="d-flex align-items-center flex-wrap gap-2">
+                    <!-- Level Filter Pills -->
+                    <div class="btn-group btn-group-sm" role="group">
+                        <a href="/logs?level=ALL" class="btn btn-outline-secondary {% if selected_level == 'ALL' %}active{% endif %}">ALL</a>
+                        <a href="/logs?level=INFO" class="btn btn-outline-primary {% if selected_level == 'INFO' %}active{% endif %}">INFO</a>
+                        <a href="/logs?level=SUCCESS" class="btn btn-outline-success {% if selected_level == 'SUCCESS' %}active{% endif %}">SUCCESS</a>
+                        <a href="/logs?level=WARNING" class="btn btn-outline-warning {% if selected_level == 'WARNING' %}active{% endif %}">WARN</a>
+                        <a href="/logs?level=ERROR" class="btn btn-outline-danger {% if selected_level == 'ERROR' %}active{% endif %}">ERROR</a>
+                    </div>
+
+                    <!-- Search Input -->
+                    <input type="text" id="logSearchInput" class="form-control form-control-sm" placeholder="Search logs..." style="width: 180px;" onkeyup="filterLogsTable()">
+
+                    <!-- Download Log File -->
+                    <a href="/logs/download" class="btn btn-sm btn-hub-secondary" title="Download raw log file">
+                        <i class="bi bi-download"></i> Download log
+                    </a>
+                </div>
+            </div>
+
+            <div class="hub-card-body p-0">
+                <div class="table-responsive">
+                    <table class="hub-table" id="logsTable">
+                        <thead>
+                            <tr>
+                                <th style="width: 180px;">Timestamp</th>
+                                <th style="width: 110px;">Level</th>
+                                <th style="width: 170px;">Module</th>
+                                <th style="width: 120px;">Run ID</th>
+                                <th>Log Message</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if logs %}
+                                {% for log in logs %}
+                                <tr class="log-table-row">
+                                    <td class="font-monospace small text-muted">
+                                        {{ log.timestamp[:19].replace('T', ' ') }}
+                                    </td>
+                                    <td>
+                                        {% if log.level == 'SUCCESS' %}
+                                            <span class="badge-status badge-success py-1"><i class="bi bi-check-circle"></i> SUCCESS</span>
+                                        {% elif log.level == 'ERROR' %}
+                                            <span class="badge-status badge-danger py-1"><i class="bi bi-x-circle"></i> ERROR</span>
+                                        {% elif log.level == 'WARNING' %}
+                                            <span class="badge-status badge-warning py-1"><i class="bi bi-exclamation-triangle"></i> WARN</span>
+                                        {% elif log.level == 'INFO' %}
+                                            <span class="badge-status badge-info py-1"><i class="bi bi-info-circle"></i> INFO</span>
+                                        {% else %}
+                                            <span class="badge-status badge-neutral py-1">{{ log.level }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="font-monospace small fw-bold text-secondary">{{ log.module }}</span>
+                                    </td>
+                                    <td>
+                                        {% if log.run_id %}
+                                            <a href="/history" class="font-monospace small text-decoration-none fw-bold">#{{ log.run_id }}</a>
+                                        {% else %}
+                                            <span class="text-muted small">N/A</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="font-monospace small text-break">
+                                        {{ log.message }}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="5" class="text-center py-4 text-muted">
+                                        No log records matching criteria. Run a pipeline to generate event logs.
+                                    </td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function filterLogsTable() {
+    const filter = document.getElementById('logSearchInput').value.toLowerCase();
+    const rows = document.querySelectorAll('#logsTable tbody tr.log-table-row');
+    rows.forEach(row => {
+        const text = row.innerText.toLowerCase();
+        row.style.display = text.includes(filter) ? '' : 'none';
+    });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,262 @@
+{% extends "base.html" %}
+
+{% block title %}Build History{% endblock %}
+{% block page_icon %}<i class="bi bi-clock-history text-primary"></i>{% endblock %}
+{% block page_title %}Build History{% endblock %}
+
+{% block content %}
+<div class="row g-3 mb-4">
+    <div class="col-12">
+        <div class="hub-card">
+            <div class="hub-card-header flex-wrap gap-2">
+                <div>
+                    <h2 class="hub-card-title">
+                        <i class="bi bi-database-check text-primary"></i> Pipeline Execution Audit Log
+                    </h2>
+                    <span class="text-muted small">Persisted in SQLite database (`instance/devops_hub.db`)</span>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <input type="text" id="historySearchInput" class="form-control form-control-sm" placeholder="Filter by Run ID or Commit..." style="width: 220px;" onkeyup="filterHistoryTable()">
+                    <a href="/pipeline" class="btn btn-hub-primary btn-sm">
+                        <i class="bi bi-plus-circle"></i> New Build
+                    </a>
+                </div>
+            </div>
+
+            <div class="hub-card-body p-0">
+                <div class="table-responsive">
+                    <table class="hub-table" id="historyTable">
+                        <thead>
+                            <tr>
+                                <th>Run ID</th>
+                                <th>Execution Timestamp</th>
+                                <th>Trigger</th>
+                                <th>Commit</th>
+                                <th>Test Status</th>
+                                <th>Docker Status</th>
+                                <th>Deployment</th>
+                                <th>Duration</th>
+                                <th>Overall Result</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if runs %}
+                                {% for r in runs %}
+                                <tr class="history-row" data-run-id="{{ r.run_id }}">
+                                    <td>
+                                        <span class="fw-bold text-primary font-monospace">#{{ r.run_id }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="small text-muted">{{ r.start_time[:19].replace('T', ' ') }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-light text-secondary border small">{{ r.trigger_type }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="font-monospace small"><i class="bi bi-git text-danger"></i> {{ r.commit_hash }}</span>
+                                    </td>
+                                    <td>
+                                        {% if r.test_status == 'PASSED' %}
+                                            <span class="badge-status badge-success">
+                                                <i class="bi bi-check-lg"></i> {{ r.tests_passed }}/{{ r.tests_total }} Passed
+                                            </span>
+                                        {% elif r.test_status == 'FAILED' %}
+                                            <span class="badge-status badge-danger">
+                                                <i class="bi bi-x-lg"></i> {{ r.tests_failed }} Failed
+                                            </span>
+                                        {% else %}
+                                            <span class="badge-status badge-neutral">{{ r.test_status }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if r.docker_status == 'PASSED' %}
+                                            <span class="badge-status badge-success">Built</span>
+                                        {% elif r.docker_status == 'SKIPPED' %}
+                                            <span class="badge-status badge-warning">Skipped</span>
+                                        {% elif r.docker_status == 'FAILED' %}
+                                            <span class="badge-status badge-danger">Failed</span>
+                                        {% else %}
+                                            <span class="badge-status badge-neutral">{{ r.docker_status }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if r.deployment_status == 'PASSED' %}
+                                            <span class="badge-status badge-success">Deployed</span>
+                                        {% elif r.deployment_status == 'PENDING' %}
+                                            <span class="badge-status badge-warning">Pending</span>
+                                        {% elif r.deployment_status == 'SKIPPED' %}
+                                            <span class="badge-status badge-neutral">Skipped</span>
+                                        {% else %}
+                                            <span class="badge-status badge-danger">{{ r.deployment_status }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ r.duration }}s</td>
+                                    <td>
+                                        {% if r.overall_status == 'SUCCESS' %}
+                                            <span class="badge-status badge-success">
+                                                <span class="pulse-dot pulse-green"></span> SUCCESS
+                                            </span>
+                                        {% else %}
+                                            <span class="badge-status badge-danger">
+                                                <span class="pulse-dot pulse-red"></span> FAILED
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-primary py-0 px-2" onclick="openRunDetails('{{ r.run_id }}')">
+                                            <i class="bi bi-eye"></i> Details
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="10" class="text-center py-4 text-muted">
+                                        <i class="bi bi-journal-x fs-3 d-block mb-2"></i>
+                                        No build history available. Execute a pipeline to populate database records.
+                                    </td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Execution Details -->
+<div class="modal fade" id="runDetailModal" tabindex="-1" aria-labelledby="runDetailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-light">
+                <h5 class="modal-title fw-bold" id="runDetailModalLabel">
+                    <i class="bi bi-layers-fill text-primary me-2"></i>Execution Breakdown: <span id="modalRunId" class="font-monospace text-primary"></span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="row g-3 mb-3">
+                    <div class="col-md-4">
+                        <div class="p-2 border rounded bg-light">
+                            <span class="text-muted small d-block">Overall Result</span>
+                            <span id="modalStatus" class="fw-bold"></span>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="p-2 border rounded bg-light">
+                            <span class="text-muted small d-block">Duration</span>
+                            <span id="modalDuration" class="fw-bold"></span>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="p-2 border rounded bg-light">
+                            <span class="text-muted small d-block">Trigger</span>
+                            <span id="modalTrigger" class="fw-bold"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <h6 class="fw-bold mb-2"><i class="bi bi-check2-circle text-success me-1"></i>Automated Tests Breakdown</h6>
+                <div class="table-responsive mb-3">
+                    <table class="table table-sm table-bordered">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Test Case Name</th>
+                                <th>Status</th>
+                                <th>Duration</th>
+                                <th>Notes / Error</th>
+                            </tr>
+                        </thead>
+                        <tbody id="modalTestsTableBody">
+                            <!-- Populated dynamically via JS -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <h6 class="fw-bold mb-2"><i class="bi bi-terminal text-primary me-1"></i>Captured Execution Logs</h6>
+                <div class="terminal-console" id="modalLogsConsole" style="height: 220px; font-size: 0.8rem;"></div>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+async function openRunDetails(runId) {
+    try {
+        const res = await fetch(`/api/pipeline/runs/${runId}`);
+        if (!res.ok) {
+            alert('Failed to retrieve run details.');
+            return;
+        }
+        const data = await res.json();
+        const run = data.run;
+        const tests = data.tests || [];
+
+        document.getElementById('modalRunId').textContent = '#' + run.run_id;
+        document.getElementById('modalStatus').innerHTML = run.overall_status === 'SUCCESS' ?
+            '<span class="text-success"><i class="bi bi-check-circle-fill"></i> SUCCESS</span>' :
+            '<span class="text-danger"><i class="bi bi-x-circle-fill"></i> FAILED</span>';
+        document.getElementById('modalDuration').textContent = `${run.duration} seconds`;
+        document.getElementById('modalTrigger').textContent = run.trigger_type;
+
+        // Tests Table
+        const tbody = document.getElementById('modalTestsTableBody');
+        tbody.innerHTML = '';
+        if (tests.length > 0) {
+            tests.forEach(t => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="font-monospace small">${t.test_name}</td>
+                    <td><span class="badge ${t.status === 'PASSED' ? 'bg-success' : 'bg-danger'}">${t.status}</span></td>
+                    <td>${t.duration}s</td>
+                    <td class="small text-danger">${t.error_message || '<span class="text-muted">None</span>'}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        } else {
+            tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No individual test records for this run.</td></tr>';
+        }
+
+        // Logs Console
+        const logsBox = document.getElementById('modalLogsConsole');
+        logsBox.innerHTML = '';
+        if (run.log_output) {
+            run.log_output.split('\n').forEach(line => {
+                const p = document.createElement('p');
+                p.className = 'log-line';
+                if (line.includes('[SUCCESS]')) p.classList.add('log-success');
+                else if (line.includes('[ERROR]')) p.classList.add('log-error');
+                else if (line.includes('[WARNING]')) p.classList.add('log-warning');
+                else p.classList.add('log-info');
+                p.textContent = line;
+                logsBox.appendChild(p);
+            });
+        } else {
+            logsBox.innerHTML = '<p class="text-muted">[No captured log output]</p>';
+        }
+
+        const modal = new bootstrap.Modal(document.getElementById('runDetailModal'));
+        modal.show();
+
+    } catch (err) {
+        alert('Error: ' + err.message);
+    }
+}
+
+function filterHistoryTable() {
+    const filter = document.getElementById('historySearchInput').value.toLowerCase();
+    const rows = document.querySelectorAll('#historyTable tbody tr.history-row');
+    rows.forEach(row => {
+        const text = row.innerText.toLowerCase();
+        row.style.display = text.includes(filter) ? '' : 'none';
+    });
+}
+</script>
+{% endblock %}
